@@ -14,6 +14,7 @@ from tqdm.notebook import tqdm
 warnings.filterwarnings("ignore")
 import csv
 import multiprocessing
+import unittest
 from multiprocessing import Pool
 from os.path import exists
 
@@ -44,6 +45,9 @@ class CogStack(object):
             self.elastic = elasticsearch.Elasticsearch(hosts=hosts,
                                                        basic_auth=(username, password),
                                                        verify_certs=False)
+        
+            
+        
 
     def _check_api_auth_details(self, api_username=None, api_password=None):
         if api_username is None:
