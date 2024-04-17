@@ -24,6 +24,11 @@ var/
 .installed.cfg
 *.egg
 
+*notebooks/new_project/*
+
+notebooks\new_project
+notebooks\new_project\*
+
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
