@@ -820,6 +820,8 @@ def iterative_multi_term_cohort_searcher_no_terms_fuzzy(
                 search_string=search_string,
             )
 
+            term_docs['search_term'] = term
+
             if debug:
                 print(term, len(term_docs))
 
