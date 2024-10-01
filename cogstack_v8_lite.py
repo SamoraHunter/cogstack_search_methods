@@ -17,14 +17,15 @@ import multiprocessing
 import unittest
 from multiprocessing import Pool
 from os.path import exists
+import os
 
 from credentials import *
 
-print("refreshed")
+print("Refreshed!")
 
 
 class CogStack(object):
-    print("refreshed")
+    print("refreshed .")
     """
     :param hosts: List of CogStack host names
     :param username: basic_auth username
@@ -796,7 +797,7 @@ def iterative_multi_term_cohort_searcher_no_terms_fuzzy(
     end_day,
     overwrite=True,
     debug=False,
-    uuid_column_name="client_idcode",
+    uuid_column_name="client_idcode"
 ):
     if not terms_list:
         print("Terms list is empty. Exiting.")
@@ -820,7 +821,7 @@ def iterative_multi_term_cohort_searcher_no_terms_fuzzy(
                 search_string=search_string,
             )
 
-            term_docs['search_term'] = term
+            term_docs["search_term"] = term
 
             if debug:
                 print(term, len(term_docs))
@@ -838,5 +839,246 @@ def iterative_multi_term_cohort_searcher_no_terms_fuzzy(
             print(
                 f"n_unique {uuid_column_name} : {len(docs[uuid_column_name].unique())}/{len(docs)}"
             )
+    
 
     return docs
+
+
+
+def iterative_multi_term_cohort_searcher_no_terms_fuzzy_mct(
+    terms_list,
+    treatment_doc_filename,
+    start_year,
+    start_month,
+    start_day,
+    end_year,
+    end_month,
+    end_day,
+    append=True,
+    debug=True,
+    uuid_column_name="client_idcode",
+):
+    print("iterative_multi_term_cohort_searcher_no_terms_fuzzy_mct",
+    start_day, start_month, start_year, end_day,end_month,end_year)
+    if not terms_list:
+        print("Terms list is empty. Exiting.")
+        return pd.DataFrame()  # Ensure it returns an empty DataFrame if terms_list is empty
+
+    file_exists = exists(treatment_doc_filename)
+
+    if file_exists and not append:
+        docs = pd.read_csv(treatment_doc_filename)
+        print(f"Loaded existing file: {treatment_doc_filename}")
+        return docs  # Ensure the function returns the loaded data
+
+    else:
+        if file_exists and not append:
+            docs_prev = pd.read_csv(treatment_doc_filename)
+            print(f"Loaded existing file and append: {treatment_doc_filename}")
+
+        all_docs = []
+
+        for term in tqdm(terms_list):
+            # Modify the search string for each term
+            
+            search_string = f'obscatalogmasteritem_displayname:("AoMRC_ClinicalSummary_FT") AND observation_valuetext_analysed:("{term}") AND observationdocument_recordeddtm:[{start_year}-{start_month}-{start_day} TO {end_year}-{end_month}-{end_day}]'
+            print("Search String", search_string)
+            # Perform the search
+            term_docs = cohort_searcher_no_terms_fuzzy(
+                index_name="observations",
+                fields_list="""observation_guid client_idcode obscatalogmasteritem_displayname
+                                observation_valuetext_analysed observationdocument_recordeddtm 
+                                clientvisit_visitidcode""".split(),
+                search_string=search_string,
+            )
+
+            # Check if term_docs is empty and log if necessary
+            if term_docs is None or term_docs.empty:
+                print(f"No results found for term: {term}")
+            else:
+                print(f"Found {len(term_docs)} documents for term: {term}")
+                term_docs["search_term"] = term
+                all_docs.append(term_docs)
+
+        # If no documents were found for any term, return an empty DataFrame
+        if not all_docs:
+            print("No documents were found for any of the terms.")
+            docs_prev = pd.read_csv(treatment_doc_filename)
+            print(f"Loaded existing file and no docs found: {treatment_doc_filename}")
+
+            return  docs_prev# Return docs from previous step
+            #return pd.DataFrame()  # Return an empty DataFrame explicitly if nothing was found
+
+        # Concatenate the results for all terms
+        docs = pd.concat(all_docs, ignore_index=True)
+        print(f"Total documents found: {len(docs)}")
+
+        # Drop duplicate rows
+        docs = docs.drop_duplicates()
+
+        if os.path.exists(treatment_doc_filename):
+            # Load the existing CSV
+            existing_data = pd.read_csv(treatment_doc_filename)
+            print(f"Loaded existing data from: {treatment_doc_filename}")
+
+            # Align the columns by using the union of both the existing and new columns
+            combined_columns = existing_data.columns.union(docs.columns)
+
+            # Reindex both the existing data and new data to have the same columns
+            existing_data = existing_data.reindex(columns=combined_columns)
+            docs = docs.reindex(columns=combined_columns)
+
+            # Drop any duplicate columns (if any)
+            existing_data = existing_data.loc[:, ~existing_data.columns.duplicated()]
+            docs = docs.loc[:, ~docs.columns.duplicated()]
+
+            # Append the new data to the existing data
+            updated_data = pd.concat([existing_data, docs], ignore_index=True)
+
+            # Save the updated data back to the CSV
+            updated_data.to_csv(treatment_doc_filename, index=False)
+            print(f"Updated data saved to: {treatment_doc_filename}")
+        else:
+            # If the file does not exist, save the new data as a new CSV
+            docs.to_csv(treatment_doc_filename, mode='w', index=False)
+            print(f"New data saved to: {treatment_doc_filename}")
+
+        if debug:
+            print(
+                f"n_unique {uuid_column_name} : {len(docs[uuid_column_name].unique())}/{len(docs)}"
+            )
+
+    return docs  # Return the final docs DataFrame
+
+
+def iterative_multi_term_cohort_searcher_no_terms_fuzzy_textual_obs(
+    terms_list,
+    treatment_doc_filename,
+    start_year,
+    start_month,
+    start_day,
+    end_year,
+    end_month,
+    end_day,
+    append=True,
+    debug=True,
+    uuid_column_name="client_idcode",
+    bloods_time_field = 'basicobs_entered'
+):
+    print("iterative_multi_term_cohort_searcher_no_terms_fuzzy_textual_obs",
+    start_day, start_month, start_year, end_day,end_month,end_year)
+    if not terms_list:
+        print("Terms list is empty. Exiting.")
+        return pd.DataFrame()  # Ensure it returns an empty DataFrame if terms_list is empty
+
+    file_exists = exists(treatment_doc_filename)
+
+    if file_exists and not append:
+        docs = pd.read_csv(treatment_doc_filename)
+        print(f"Loaded existing file: {treatment_doc_filename}")
+        return docs  # Ensure the function returns the loaded data
+
+    else:
+        if file_exists and not append:
+            docs_prev = pd.read_csv(treatment_doc_filename)
+            print(f"Loaded existing file and append: {treatment_doc_filename}")
+
+        all_docs = []
+
+        for term in tqdm(terms_list):
+            # Modify the search string for each term
+            
+            #search_string = f'obscatalogmasteritem_displayname:("AoMRC_ClinicalSummary_FT") AND observation_valuetext_analysed:("{term}") AND observationdocument_recordeddtm:[{start_year}-{start_month}-{start_day} TO {end_year}-{end_month}-{end_day}]'
+            
+            search_string = f"{bloods_time_field}:[{start_year}-{start_month}-{start_day} TO {end_year}-{end_month}-{end_day}]",
+            
+            search_string = f"textualObs:({term})"
+            
+            print("Search String", search_string)
+            # Perform the search
+            term_docs = cohort_searcher_no_terms_fuzzy(
+                index_name="basic_observations",
+                fields_list=["client_idcode",
+                    "basicobs_itemname_analysed",
+                    "basicobs_value_numeric",
+                    "basicobs_value_analysed",
+                    "basicobs_entered",
+                    "clientvisit_serviceguid",
+                    "basicobs_guid",
+                    "updatetime",
+                    "textualObs"],
+                search_string=search_string,
+            )
+
+            # Check if term_docs is empty and log if necessary
+            if term_docs is None or term_docs.empty:
+                print(f"No results found for term: {term}")
+            else:
+                print(f"Found {len(term_docs)} documents for term: {term}")
+                term_docs["search_term"] = term
+                all_docs.append(term_docs)
+
+        # If no documents were found for any term, return an empty DataFrame
+        if not all_docs:
+            print("No documents were found for any of the terms.")
+            docs_prev = pd.read_csv(treatment_doc_filename)
+            print(f"Loaded existing file and no docs found: {treatment_doc_filename}")
+
+            return  docs_prev# Return docs from previous step
+            #return pd.DataFrame()  # Return an empty DataFrame explicitly if nothing was found
+
+        # Concatenate the results for all terms
+        docs = pd.concat(all_docs, ignore_index=True)
+        print(f"Total documents found: {len(docs)}")
+
+        # Drop duplicate rows
+        docs = docs.drop_duplicates()
+
+        # Handle textual obs filtering
+
+        # Drop rows with no textualObs
+        docs = docs.dropna(subset=["textualObs"])
+
+        # Drop rows with empty string in textualObs
+        docs = docs[docs["textualObs"] != ""]
+
+        docs["body_analysed"] = docs["textualObs"].astype(str)
+
+        if os.path.exists(treatment_doc_filename):
+            # Load the existing CSV
+            existing_data = pd.read_csv(treatment_doc_filename)
+            print(f"Loaded existing data from: {treatment_doc_filename}")
+
+            # Align the columns by using the union of both the existing and new columns
+            combined_columns = existing_data.columns.union(docs.columns)
+
+            # Reindex both the existing data and new data to have the same columns
+            existing_data = existing_data.reindex(columns=combined_columns)
+            docs = docs.reindex(columns=combined_columns)
+
+            # Drop any duplicate columns (if any)
+            existing_data = existing_data.loc[:, ~existing_data.columns.duplicated()]
+            docs = docs.loc[:, ~docs.columns.duplicated()]
+
+            # Append the new data to the existing data
+            updated_data = pd.concat([existing_data, docs], ignore_index=True)
+
+            # Save the updated data back to the CSV
+            updated_data.to_csv(treatment_doc_filename, index=False)
+            print(f"Updated data saved to: {treatment_doc_filename}")
+        else:
+            # If the file does not exist, save the new data as a new CSV
+            docs.to_csv(treatment_doc_filename, mode='w', index=False)
+            print(f"New data saved to: {treatment_doc_filename}")
+
+        if debug:
+            print(
+                f"n_unique {uuid_column_name} : {len(docs[uuid_column_name].unique())}/{len(docs)}"
+            )
+
+    return docs  # Return the final docs DataFrame
+
+
+
+
+
