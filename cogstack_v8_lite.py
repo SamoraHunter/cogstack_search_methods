@@ -808,7 +808,9 @@ def iterative_multi_term_cohort_searcher_no_terms_fuzzy(
     file_exists = exists(treatment_doc_filename)
 
     if file_exists and not overwrite:
-        print("treatment doc already exists and not overwrite, reading...")
+        print(
+            f"file_exists and not overwrite, reading docs from {treatment_doc_filename}"
+        )
         docs = pd.read_csv(treatment_doc_filename)
     else:
         all_docs = []
@@ -1433,10 +1435,11 @@ def cohort_searcher_no_terms_fuzzy(
                 "bool": {
                     "must": [
                         {
-                            "query_string": {  # Search across all fields by default
-                                "query": search_string,
-                                "fuzziness": fuzzy,  # Set fuzziness level
-                                "fields": ["*"],  # Search all fields by default
+                            "match": {
+                                "_all": {  # Search across all fields by default
+                                    "query": search_string,
+                                    "fuzziness": fuzzy,  # Set fuzziness level
+                                }
                             }
                         }
                     ]
