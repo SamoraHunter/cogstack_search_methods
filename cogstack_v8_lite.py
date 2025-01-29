@@ -21,7 +21,8 @@ import os
 
 from credentials import *
 
-print("Refreshed!")
+print(f"Imported cogstack_v8_lite from cogstack_search_methods")
+print(f"Username: %s" % username)
 
 
 class CogStack(object):
@@ -41,17 +42,13 @@ class CogStack(object):
         hosts: List,
         username: str = None,
         password: str = None,
-        api_username: str = None,
-        api_password: str = None,
         api=False,
+        api_key: str = None,
     ):
 
         if api:
-            api_username, api_password = self._check_api_auth_details(
-                api_username, api_password
-            )
             self.elastic = elasticsearch.Elasticsearch(
-                hosts=hosts, api_key=(api_username, api_password), verify_certs=False
+                hosts=hosts, api_key=api_key, verify_certs=False
             )
         else:
             username, password = self._check_auth_details(username, password)
@@ -811,6 +808,7 @@ def iterative_multi_term_cohort_searcher_no_terms_fuzzy(
     file_exists = exists(treatment_doc_filename)
 
     if file_exists and not overwrite:
+        print("treatment doc already exists and not overwrite, reading...")
         docs = pd.read_csv(treatment_doc_filename)
     else:
         all_docs = []
@@ -1435,11 +1433,10 @@ def cohort_searcher_no_terms_fuzzy(
                 "bool": {
                     "must": [
                         {
-                            "match": {
-                                "_all": {  # Search across all fields by default
-                                    "query": search_string,
-                                    "fuzziness": fuzzy,  # Set fuzziness level
-                                }
+                            "query_string": {  # Search across all fields by default
+                                "query": search_string,
+                                "fuzziness": fuzzy,  # Set fuzziness level
+                                "fields": ["*"],  # Search all fields by default
                             }
                         }
                     ]
