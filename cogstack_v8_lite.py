@@ -1435,11 +1435,10 @@ def cohort_searcher_no_terms_fuzzy(
                 "bool": {
                     "must": [
                         {
-                            "match": {
-                                "_all": {  # Search across all fields by default
-                                    "query": search_string,
-                                    "fuzziness": fuzzy,  # Set fuzziness level
-                                }
+                            "query_string": {
+                                "fields": ["*"],  # Search across all fields by default
+                                "query": search_string,
+                                "fuzziness": fuzzy,  # Set fuzziness level
                             }
                         }
                     ]
