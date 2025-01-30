@@ -927,7 +927,13 @@ def iterative_multi_term_cohort_searcher_no_terms_fuzzy(
         docs = docs.drop_duplicates()
 
         # Save the results to a temporary CSV
-        docs.to_csv(treatment_doc_filename, index=False)
+        docs.to_csv(
+            treatment_doc_filename,
+            index=False,
+            escapechar="\\",  # Set backslash as escape character
+            doublequote=True,  # Use double quotes to escape quotes
+            encoding="utf-8",
+        )  # Explicitly set encoding)
         if debug:
             print(
                 f"n_unique {uuid_column_name} : {len(docs[uuid_column_name].unique())}/{len(docs)}"
@@ -1158,7 +1164,14 @@ def iterative_multi_term_cohort_searcher_no_terms_fuzzy_mct(
             print(f"Updated data saved to: {treatment_doc_filename}")
         else:
             # If the file does not exist, save the new data as a new CSV
-            docs.to_csv(treatment_doc_filename, mode="w", index=False)
+            docs.to_csv(
+                treatment_doc_filename,
+                mode="w",
+                index=False,
+                escapechar="\\",  # Set backslash as escape character
+                doublequote=True,  # Use double quotes to escape quotes
+                encoding="utf-8",
+            )  # Explicitly set encoding)
             print(f"New data saved to: {treatment_doc_filename}")
 
         if debug:
@@ -1398,7 +1411,14 @@ def iterative_multi_term_cohort_searcher_no_terms_fuzzy_textual_obs(
             print(f"Updated data saved to: {treatment_doc_filename}")
         else:
             # If the file does not exist, save the new data as a new CSV
-            docs.to_csv(treatment_doc_filename, mode="w", index=False)
+            docs.to_csv(
+                treatment_doc_filename,
+                mode="w",
+                index=False,
+                escapechar="\\",  # Set backslash as escape character
+                doublequote=True,  # Use double quotes to escape quotes
+                encoding="utf-8",
+            )  # Explicitly set encoding))
             print(f"New data saved to: {treatment_doc_filename}")
 
         if debug:
